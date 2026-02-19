@@ -46,6 +46,6 @@ def validate_config() -> Optional[str]:
         return "TELEGRAM_BOT_TOKEN not set. Get it from @BotFather on Telegram."
     
     if not GEMINI_API_KEY:
-        return "GEMINI_API_KEY not set. Get it from https://makersuite.google.com/app/apikey"
+        return "GEMINI_API_KEY not set. Get it from https://aistudio.google.com/app/apikey"
     
     return None

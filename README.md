@@ -38,7 +38,7 @@ pip install -r requirements.txt
 # - Copy the API token
 
 # 3. Set up Gemini API
-# - Go to https://makersuite.google.com/app/apikey
+# - Go to https://aistudio.google.com/app/apikey
 # - Create an API key
 
 # 4. Configure environment variables
@@ -162,7 +162,7 @@ pip install google-genai
 You need to create a bot with @BotFather first. See Exercise 1.
 
 ### "GEMINI_API_KEY not set"
-Get your API key from https://makersuite.google.com/app/apikey
+Get your API key from https://aistudio.google.com/app/apikey
 
 ### Bot doesn't respond to photos
 - Make sure you've set both environment variables

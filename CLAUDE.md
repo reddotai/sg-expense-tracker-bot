@@ -142,7 +142,7 @@ TODO: Add flags for medical, education, insurance expenses
 → Copy `.env.example` to `.env` and add your token
 
 **"Gemini API error"**
-→ Check your API key at https://makersuite.google.com/app/apikey
+→ Check your API key at https://aistudio.google.com/app/apikey
 
 **"Database locked"**
 → SQLite doesn't support concurrent writes; bot handles this with retries

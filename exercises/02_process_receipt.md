@@ -12,7 +12,7 @@ Send a photo → Extract text with Gemini → Parse amount and vendor.
 
 ### Create API Key
 
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Sign in with your Google account
 3. Click **"Create API Key"**
 4. Copy the key (starts with `AIza...`)
@@ -214,7 +214,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 **Problem:** API key invalid or quota exceeded  
 **Fix:**
-1. Check key at https://makersuite.google.com/app/apikey
+1. Check key at https://aistudio.google.com/app/apikey
 2. Ensure key is in `.env` file
 3. Restart the bot
 
