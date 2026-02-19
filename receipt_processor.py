@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 # Try to import optional dependencies
 # If they fail, we'll show a helpful error when the function is called
+genai = None
+types = None
 try:
     from google import genai
     from google.genai import types
@@ -19,9 +21,11 @@ except ImportError:
     GENAI_AVAILABLE = False
     logger.debug("google-genai not available. Will show error when process_receipt is called.")
 
+Image = None
+io_module = None
 try:
     from PIL import Image
-    import io
+    import io as io_module
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -82,7 +86,7 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
         """
         
         # Convert bytes to PIL Image
-        image = Image.open(io.BytesIO(photo_bytes))
+        image = Image.open(io_module.BytesIO(photo_bytes))
         
         # Generate response
         response = client.models.generate_content(

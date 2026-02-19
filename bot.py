@@ -21,7 +21,7 @@ from telegram.ext import (
 from dotenv import load_dotenv
 
 from receipt_processor import process_receipt
-from database import init_db, add_transaction, get_monthly_summary
+from database import init_db, add_transaction, get_monthly_summary, check_rate_limit
 from budget import check_budget, get_budget_status
 from export import export_to_excel
 from ai_categorization import (
