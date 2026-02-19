@@ -44,60 +44,72 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+import html
+
 # Bot configuration
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-
-# Rate limiting storage (in production, use Redis or database)
-user_last_request: Dict[int, float] = {}
-user_daily_count: Dict[int, Dict[str, int]] = {}  # user_id -> {date: count}
 
 # Constants
 MAX_PHOTO_SIZE_MB = 10
 RATE_LIMIT_SECONDS = 3
 MAX_DAILY_RECEIPTS = 50  # Prevent API quota exhaustion
+MAX_AI_CATEGORIZATIONS = 20  # Limit AI categorization separately
 
 
-def rate_limit(seconds: int = RATE_LIMIT_SECONDS):
-    """Decorator to rate limit commands per user."""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            user_id = update.effective_user.id
-            now = time.time()
-            
-            if user_id in user_last_request:
-                elapsed = now - user_last_request[user_id]
-                if elapsed < seconds:
-                    await update.message.reply_text(
-                        f"⏳ Please wait {seconds - int(elapsed)} seconds before trying again."
-                    )
-                    return
-            
-            user_last_request[user_id] = now
-            return await func(update, context)
-        return wrapper
-    return decorator
-
-
-def check_daily_limit(user_id: int, limit: int = MAX_DAILY_RECEIPTS) -> bool:
-    """Check if user has exceeded daily receipt limit."""
-    today = datetime.now().strftime('%Y-%m-%d')
+async def check_rate_limits(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Check all rate limits for user. Returns True if allowed."""
+    user_id = update.effective_user.id
     
-    if user_id not in user_daily_count:
-        user_daily_count[user_id] = {}
+    # Check burst rate limit (3 seconds between requests)
+    allowed, message = check_rate_limit(user_id, 'burst', 1, RATE_LIMIT_SECONDS)
+    if not allowed:
+        await update.message.reply_text(message)
+        return False
     
-    if today not in user_daily_count[user_id]:
-        user_daily_count[user_id][today] = 0
+    # Check daily receipt limit
+    allowed, message = check_rate_limit(user_id, 'daily_receipts', MAX_DAILY_RECEIPTS)
+    if not allowed:
+        await update.message.reply_text(message)
+        return False
     
-    return user_daily_count[user_id][today] < limit
+    return True
 
 
-def increment_daily_count(user_id: int):
-    """Increment user's daily receipt count."""
-    today = datetime.now().strftime('%Y-%m-%d')
-    if user_id in user_daily_count and today in user_daily_count[user_id]:
-        user_daily_count[user_id][today] += 1
+async def check_ai_rate_limit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Check AI categorization rate limit. Returns True if allowed."""
+    user_id = update.effective_user.id
+    allowed, message = check_rate_limit(user_id, 'ai_categorization', MAX_AI_CATEGORIZATIONS)
+    if not allowed:
+        await update.message.reply_text(
+            f"⚠️ AI categorization limit reached ({MAX_AI_CATEGORIZATIONS}/day).\n"
+            "Unknown vendors will be marked as 'others' until tomorrow."
+        )
+        return False
+    return True
+
+
+def sanitize_vendor_name(vendor: str) -> str:
+    """
+    Sanitize vendor name for display and storage.
+    Removes control characters, limits length, escapes HTML.
+    """
+    if not vendor:
+        return "Unknown Vendor"
+    
+    # Remove control characters (keep only printable ASCII and common Unicode)
+    vendor = ''.join(char for char in vendor if ord(char) >= 32 or char in '\t\n\r')
+    
+    # Limit length
+    vendor = vendor[:100]
+    
+    # Escape HTML to prevent XSS
+    vendor = html.escape(vendor)
+    
+    # Strip whitespace
+    vendor = vendor.strip()
+    
+    return vendor if vendor else "Unknown Vendor"
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -325,24 +337,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Process receipt photos with security checks."""
     user_id = update.effective_user.id
     
-    # Rate limiting check
-    now = time.time()
-    if user_id in user_last_request:
-        elapsed = now - user_last_request[user_id]
-        if elapsed < RATE_LIMIT_SECONDS:
-            await update.message.reply_text(
-                f"⏳ Please wait {RATE_LIMIT_SECONDS - int(elapsed)} seconds between receipts."
-            )
-            return
-    user_last_request[user_id] = now
-    
-    # Daily limit check
-    if not check_daily_limit(user_id):
-        await update.message.reply_text(
-            f"⚠️ Daily limit reached ({MAX_DAILY_RECEIPTS} receipts/day).\n"
-            "This helps prevent API quota exhaustion.\n"
-            "Try again tomorrow!"
-        )
+    # Check rate limits (persistent, survives bot restart)
+    if not await check_rate_limits(update, context):
         return
     
     # Get the photo file
@@ -381,20 +377,45 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
             return
         
-        # Increment daily count on success
-        increment_daily_count(user_id)
-        
         # Sanitize vendor name (prevent XSS/log injection)
-        vendor = receipt_data['vendor']
-        if vendor:
-            # Remove control characters and limit length
-            vendor = ''.join(char for char in vendor if ord(char) >= 32)[:100]
-        if not vendor:
-            vendor = "Unknown Vendor"
+        vendor = sanitize_vendor_name(receipt_data['vendor'])
         receipt_data['vendor'] = vendor
         
         # Categorize the vendor (smart categorization with AI fallback)
         category = smart_categorize(vendor, user_id, GEMINI_API_KEY)
+        
+        # Add to database
+        transaction_id = add_transaction(
+            user_id=user_id,
+            vendor=receipt_data['vendor'],
+            amount=receipt_data['amount'],
+            date=receipt_data['date'],
+            category=category,
+            items=receipt_data.get('items', [])
+        )
+        
+        # Build response
+        message = f"✅ Expense recorded!\n\n"
+        message += f"🏪 {receipt_data['vendor']}\n"
+        message += f"💵 ${receipt_data['amount']:.2f}\n"
+        message += f"📁 {category}\n"
+        
+        if receipt_data.get('date'):
+            message += f"📅 {receipt_data['date']}\n"
+        
+        # Check budget
+        budget_status = check_budget(user_id, category, receipt_data['amount'])
+        if budget_status:
+            message += f"\n⚠️ {budget_status}"
+        
+        await update.message.reply_text(message)
+        
+    except Exception as e:
+        logger.error(f"Error processing receipt: {e}")
+        await update.message.reply_text(
+            "❌ Sorry, something went wrong.\n"
+            "Please try again with a clearer photo."
+        )
         
         # Add to database
         transaction_id = add_transaction(

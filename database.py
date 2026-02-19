@@ -5,6 +5,7 @@ SQLite database operations for expense tracking.
 
 import sqlite3
 import json
+import time
 from datetime import datetime
 from typing import List, Dict, Optional
 from pathlib import Path
@@ -224,6 +225,141 @@ def set_user_setting(user_id: int, key: str, value: str) -> None:
     
     conn.commit()
     conn.close()
+
+
+# Rate limiting storage (persistent)
+def init_rate_limit_table() -> None:
+    """Create rate limiting table if not exists."""
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS rate_limits (
+            user_id INTEGER NOT NULL,
+            limit_type TEXT NOT NULL,
+            count INTEGER DEFAULT 0,
+            reset_date TEXT NOT NULL,
+            last_request REAL,
+            PRIMARY KEY (user_id, limit_type)
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+
+def check_rate_limit(user_id: int, limit_type: str, max_requests: int, 
+                     window_seconds: Optional[int] = None) -> tuple[bool, str]:
+    """
+    Check if user has exceeded rate limit.
+    
+    Args:
+        user_id: Telegram user ID
+        limit_type: 'daily' or 'burst'
+        max_requests: Maximum allowed requests
+        window_seconds: For burst limits, time window
+    
+    Returns:
+        (allowed: bool, message: str)
+    """
+    init_rate_limit_table()
+    
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    
+    today = datetime.now().strftime('%Y-%m-%d')
+    now = time.time()
+    
+    # Get current record
+    cursor.execute('''
+        SELECT count, reset_date, last_request FROM rate_limits
+        WHERE user_id = ? AND limit_type = ?
+    ''', (user_id, limit_type))
+    
+    result = cursor.fetchone()
+    
+    if not result:
+        # First request - create record
+        cursor.execute('''
+            INSERT INTO rate_limits (user_id, limit_type, count, reset_date, last_request)
+            VALUES (?, ?, 1, ?, ?)
+        ''', (user_id, limit_type, today, now))
+        conn.commit()
+        conn.close()
+        return True, ""
+    
+    count, reset_date, last_request = result
+    
+    # Check if window has reset
+    if limit_type == 'daily' and reset_date != today:
+        # Reset daily counter
+        cursor.execute('''
+            UPDATE rate_limits 
+            SET count = 1, reset_date = ?, last_request = ?
+            WHERE user_id = ? AND limit_type = ?
+        ''', (today, now, user_id, limit_type))
+        conn.commit()
+        conn.close()
+        return True, ""
+    
+    if limit_type == 'burst' and window_seconds and last_request:
+        if now - last_request > window_seconds:
+            # Reset burst counter
+            cursor.execute('''
+                UPDATE rate_limits 
+                SET count = 1, last_request = ?
+                WHERE user_id = ? AND limit_type = ?
+            ''', (now, user_id, limit_type))
+            conn.commit()
+            conn.close()
+            return True, ""
+    
+    # Check limit
+    if count >= max_requests:
+        if limit_type == 'daily':
+            message = f"⚠️ Daily limit reached ({max_requests} requests/day). Try again tomorrow!"
+        else:
+            message = f"⏳ Rate limit exceeded. Please wait a moment."
+        conn.close()
+        return False, message
+    
+    # Increment counter
+    cursor.execute('''
+        UPDATE rate_limits 
+        SET count = count + 1, last_request = ?
+        WHERE user_id = ? AND limit_type = ?
+    ''', (now, user_id, limit_type))
+    
+    conn.commit()
+    conn.close()
+    return True, ""
+
+
+def get_rate_limit_status(user_id: int, limit_type: str) -> dict:
+    """Get current rate limit status for user."""
+    init_rate_limit_table()
+    
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    cursor.execute('''
+        SELECT count, reset_date, last_request FROM rate_limits
+        WHERE user_id = ? AND limit_type = ?
+    ''', (user_id, limit_type))
+    
+    result = cursor.fetchone()
+    conn.close()
+    
+    if not result:
+        return {'count': 0, 'reset_date': today, 'last_request': None}
+    
+    return {
+        'count': result[0],
+        'reset_date': result[1],
+        'last_request': result[2]
+    }
 
 
 if __name__ == '__main__':

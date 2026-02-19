@@ -123,7 +123,8 @@ Respond with ONLY the category name (lowercase, no punctuation). If unsure, resp
         return None
 
 
-def smart_categorize(vendor_name: str, user_id: int, api_key: Optional[str] = None) -> str:
+def smart_categorize(vendor_name: str, user_id: int, api_key: Optional[str] = None, 
+                     skip_ai_rate_limit: bool = False) -> str:
     """
     Smart categorization with fallback to AI if enabled.
     
@@ -135,17 +136,26 @@ def smart_categorize(vendor_name: str, user_id: int, api_key: Optional[str] = No
         vendor_name: Vendor name to categorize
         user_id: Telegram user ID (for preference check)
         api_key: Gemini API key (optional)
+        skip_ai_rate_limit: If True, bypass AI rate limit (for internal use)
     
     Returns:
         Category string
     """
     from categories import categorize_vendor
+    from database import check_rate_limit
     
     # Step 1: Rule-based (fast, always runs)
     category = categorize_vendor(vendor_name)
     
     # Step 2: If unknown and AI enabled, try Gemini
     if category == 'others' and is_ai_categorization_enabled(user_id):
+        # Check AI rate limit (20/day) unless bypassed
+        if not skip_ai_rate_limit:
+            allowed, _ = check_rate_limit(user_id, 'ai_categorization', 20)
+            if not allowed:
+                logger.info(f"AI categorization rate limit hit for user {user_id}")
+                return 'others'
+        
         ai_category = categorize_with_ai(vendor_name, api_key)
         if ai_category:
             return ai_category
