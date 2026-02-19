@@ -2,6 +2,9 @@
 """
 Smart vendor categorization using Gemini AI.
 Toggle on/off per user preference.
+
+NOTE: google-genai import is lazy (inside function) to allow bot startup
+without the package installed. This lets beginners see friendly errors.
 """
 
 import os
@@ -9,15 +12,7 @@ import json
 import logging
 from typing import Optional
 
-# Check if google-genai is available
-try:
-    from google import genai
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
-    logging.warning("google-genai not installed. AI categorization disabled.")
-
-from database import get_user_setting, set_user_setting
+from database import get_user_setting, set_user_setting, check_rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +70,10 @@ def categorize_with_ai(vendor_name: str, api_key: Optional[str] = None) -> Optio
     Returns:
         Category string or None if AI categorization fails
     """
-    if not GENAI_AVAILABLE:
+    # Lazy import - only load when this function is called
+    try:
+        from google import genai
+    except ImportError:
         logger.warning("google-genai not installed. Cannot use AI categorization.")
         return None
     

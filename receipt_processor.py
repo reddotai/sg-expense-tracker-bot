@@ -6,10 +6,26 @@ Uses the new google.genai package (not deprecated google.generativeai).
 
 import logging
 from typing import Optional, Dict, List
-from google import genai
-from google.genai import types
 
 logger = logging.getLogger(__name__)
+
+# Try to import optional dependencies
+# If they fail, we'll show a helpful error when the function is called
+try:
+    from google import genai
+    from google.genai import types
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    logger.debug("google-genai not available. Will show error when process_receipt is called.")
+
+try:
+    from PIL import Image
+    import io
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    logger.debug("PIL not available. Will show error when process_receipt is called.")
 
 
 def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
@@ -23,6 +39,20 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
     Returns:
         Dictionary with vendor, amount, date, items or None if failed
     """
+    # Check if dependencies are available
+    if not GENAI_AVAILABLE:
+        logger.error("google-genai package not installed.")
+        logger.error("Please install: pip install google-genai")
+        return None
+    
+    if not PIL_AVAILABLE:
+        logger.error("PIL (Pillow) package not installed.")
+        logger.error("Please install: pip install pillow")
+        return None
+    
+    import json
+    import re
+    
     try:
         # Create client with API key
         client = genai.Client(api_key=api_key)
@@ -52,9 +82,6 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
         """
         
         # Convert bytes to PIL Image
-        from PIL import Image
-        import io
-        
         image = Image.open(io.BytesIO(photo_bytes))
         
         # Generate response
@@ -64,10 +91,6 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
         )
         
         # Parse the response
-        import json
-        import re
-        
-        # Extract JSON from response
         text = response.text
         
         # Find JSON in the response (it might be wrapped in markdown)

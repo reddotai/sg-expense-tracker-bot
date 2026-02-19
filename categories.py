@@ -147,6 +147,15 @@ VENDOR_CATEGORIES = {
     'subscriptions': [
         'membership', 'subscription', 'ntuc membership', 'costco',
         'amazon prime', 'ntuc plus'
+    ],
+
+    # Gaming (NEW CATEGORY - for video games, consoles, in-game purchases)
+    'gaming': [
+        'steam', 'epic games', 'gog', 'origin', 'ea', 'ubisoft',
+        'playstation', 'psn', 'xbox', 'microsoft store', 'nintendo',
+        'gamestop', 'qisahn', 'toy or game', 'toyorgame',
+        'razer', 'logitech gaming', 'steelseries', 'hyperx',
+        'game shop', 'video game', 'gaming', 'console', 'controller'
     ]
 }
 
@@ -193,6 +202,7 @@ def get_category_emoji(category: str) -> str:
         'personal_care': '💄',
         'home_garden': '🏠',
         'fitness': '💪',       # NEW: Fitness category
+        'gaming': '🎮',        # NEW: Gaming category
         'others': '📦'
     }
     return emojis.get(category, '📦')
@@ -215,7 +225,10 @@ if __name__ == '__main__':
         'Singapore Airlines',
         'Prudential Insurance',
         'Popular Bookstore',
-        'Anytime Fitness'
+        'Anytime Fitness',
+        'Steam Purchase',
+        'Qisahn Gaming Store',
+        'PlayStation Store'
     ]
     
     for vendor in test_vendors:

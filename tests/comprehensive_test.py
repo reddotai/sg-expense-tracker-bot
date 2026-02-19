@@ -29,8 +29,7 @@ from config import DEFAULT_BUDGETS, get_data_location_info, validate_config
 from export import export_to_excel, export_to_csv
 from ai_categorization import (
     is_ai_categorization_enabled, 
-    toggle_ai_categorization,
-    GENAI_AVAILABLE
+    toggle_ai_categorization
 )
 
 # Test configuration

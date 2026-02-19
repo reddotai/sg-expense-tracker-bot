@@ -7,10 +7,8 @@ Uses Gemini AI for receipt parsing.
 
 import os
 import logging
-import time
 from datetime import datetime
 from typing import Optional, Dict
-from functools import wraps
 
 from telegram import Update
 from telegram.ext import (
@@ -24,9 +22,8 @@ from dotenv import load_dotenv
 
 from receipt_processor import process_receipt
 from database import init_db, add_transaction, get_monthly_summary
-from categories import categorize_vendor
 from budget import check_budget, get_budget_status
-from export import export_to_excel, export_to_csv
+from export import export_to_excel
 from ai_categorization import (
     is_ai_categorization_enabled,
     toggle_ai_categorization,

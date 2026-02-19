@@ -9,7 +9,6 @@ import time
 import logging
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
-from pathlib import Path
 
 from config import DATABASE_FILE
 
@@ -271,7 +270,7 @@ def check_rate_limit(user_id: int, limit_type: str, max_requests: int,
         
         # Check if window has reset
         should_reset = False
-        if limit_type == 'daily' and reset_date != today:
+        if limit_type.startswith('daily') and reset_date != today:
             should_reset = True
             count = 0
         elif limit_type == 'burst' and window_seconds and last_request:
@@ -282,7 +281,7 @@ def check_rate_limit(user_id: int, limit_type: str, max_requests: int,
         # Check limit before incrementing
         if count >= max_requests and not should_reset:
             conn.rollback()
-            if limit_type == 'daily':
+            if limit_type.startswith('daily'):
                 message = f"⚠️ Daily limit reached ({max_requests} requests/day). Try again tomorrow!"
             else:
                 message = "⏳ Rate limit exceeded. Please wait a moment."

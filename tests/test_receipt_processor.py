@@ -11,7 +11,7 @@ class TestProcessReceipt:
     """Test receipt processing with mocked dependencies."""
     
     @patch('receipt_processor.genai.Client')
-    @patch('PIL.Image.open')
+    @patch('receipt_processor.Image.open')
     def test_successful_extraction(self, mock_image_open, mock_client_class):
         """Should extract receipt data successfully."""
         from receipt_processor import process_receipt
@@ -46,7 +46,7 @@ class TestProcessReceipt:
         assert result['gst_amount'] == 3.95
     
     @patch('receipt_processor.genai.Client')
-    @patch('PIL.Image.open')
+    @patch('receipt_processor.Image.open')
     def test_missing_optional_fields(self, mock_image_open, mock_client_class):
         """Should handle missing optional fields."""
         from receipt_processor import process_receipt
@@ -75,7 +75,7 @@ class TestProcessReceipt:
         assert result.get('items') == []
     
     @patch('receipt_processor.genai.Client')
-    @patch('PIL.Image.open')
+    @patch('receipt_processor.Image.open')
     def test_invalid_json_response(self, mock_image_open, mock_client_class):
         """Should handle invalid JSON from Gemini."""
         from receipt_processor import process_receipt
@@ -96,7 +96,7 @@ class TestProcessReceipt:
         assert result is None
     
     @patch('receipt_processor.genai.Client')
-    @patch('PIL.Image.open')
+    @patch('receipt_processor.Image.open')
     def test_missing_required_fields(self, mock_image_open, mock_client_class):
         """Should return None if required fields missing."""
         from receipt_processor import process_receipt
@@ -120,7 +120,7 @@ class TestProcessReceipt:
         assert result is None
     
     @patch('receipt_processor.genai.Client')
-    @patch('PIL.Image.open')
+    @patch('receipt_processor.Image.open')
     def test_api_error(self, mock_image_open, mock_client_class):
         """Should handle API errors gracefully."""
         from receipt_processor import process_receipt
@@ -137,7 +137,7 @@ class TestProcessReceipt:
         assert result is None
     
     @patch('receipt_processor.genai.Client')
-    @patch('PIL.Image.open')
+    @patch('receipt_processor.Image.open')
     def test_amount_as_string(self, mock_image_open, mock_client_class):
         """Should handle amount as string in JSON."""
         from receipt_processor import process_receipt

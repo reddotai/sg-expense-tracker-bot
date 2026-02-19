@@ -72,6 +72,7 @@ DEFAULT_BUDGETS = {
     'personal_care': 120,  # Increased from 100
     'home_garden': 250,  # Increased from 200
     'fitness': 150,  # NEW: Budget for Fitness category
+    'gaming': 100,  # NEW: Budget for Gaming category
     'others': 200  # Increased from 150
 }
 
