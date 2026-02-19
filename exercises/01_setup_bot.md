@@ -38,10 +38,21 @@ cd sg-expense-tracker-bot
 
 ### Create Virtual Environment
 
+This keeps your project dependencies isolated.
+
+**Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+**Mac/Linux:**
 ```bash
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 ```
+
+You should see `(venv)` appear in your terminal prompt when activated.
 
 ### Install Dependencies
 

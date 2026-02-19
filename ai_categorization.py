@@ -23,22 +23,23 @@ logger = logging.getLogger(__name__)
 
 # Default categories for AI to choose from
 CATEGORY_DESCRIPTIONS = {
-    'groceries': 'Food items, supermarkets, convenience stores',
-    'transport': 'Taxis, ride-hailing, public transport, fuel',
-    'food_delivery': 'Food delivery apps and services',
-    'hawker': 'Hawker centres, food courts, local coffee shops',
-    'dining': 'Restaurants, cafes, fast food',
-    'petrol': 'Gas stations, petrol',
-    'shopping': 'Clothing, retail, online shopping',
-    'electronics': 'Gadgets, computers, appliances',
-    'utilities': 'Phone, internet, electricity, water bills',
-    'healthcare': 'Medical, dental, pharmacy, clinics',
-    'entertainment': 'Movies, streaming, games, gym',
-    'education': 'School, tuition, books, courses',
-    'travel': 'Flights, hotels, travel bookings',
-    'insurance': 'Insurance premiums',
-    'subscriptions': 'Memberships, recurring subscriptions',
-    'others': 'Miscellaneous or unclear'
+    'groceries': 'Food items, supermarkets, convenience stores, daily essentials',
+    'transport': 'Taxis, ride-hailing (Grab/Gojek), public transport (MRT/bus), fuel',
+    'food_delivery': 'Food delivery apps and services like GrabFood, Foodpanda, Deliveroo',
+    'hawker': 'Hawker centres, food courts, local coffee shops (kopitiam), wet market food',
+    'dining': 'Restaurants, cafes, fast food, bakeries, bubble tea shops',
+    'petrol': 'Gas stations, petrol, diesel, car washes at petrol kiosks',
+    'shopping': 'Clothing, retail stores, online shopping platforms (Lazada, Shopee)',
+    'electronics': 'Gadgets, computers, appliances, mobile phones, IT accessories',
+    'utilities': 'Phone bills, internet, electricity, water, gas (SP Services, telcos)',
+    'healthcare': 'Medical, dental, pharmacy, clinics, TCM, health supplements',
+    'entertainment': 'Movies, streaming subscriptions, games, gym, karaoke',
+    'education': 'School fees, tuition, books, courses, enrichment classes',
+    'travel': 'Flights, hotels, travel bookings, travel insurance',
+    'insurance': 'Insurance premiums (life, health, car, home)',
+    'subscriptions': 'Memberships, recurring subscriptions, gym memberships',
+    'personal_care': 'Beauty products, skincare, hair salons, cosmetics, toiletries',
+    'others': 'Miscellaneous or unclear expenses'
 }
 
 

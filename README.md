@@ -21,30 +21,194 @@
 
 ## Quick Start
 
+### Before You Start (Check These)
+
+- [ ] **Python 3.10+ installed** → [Download here](https://www.python.org/downloads/)
+- [ ] **Git installed** → [Download here](https://git-scm.com/downloads)
+- [ ] **A code editor** (VS Code, Notepad++, or any text editor)
+
+**Not sure?** Open your terminal/command prompt and type:
 ```bash
-# 1. Clone and setup
+python --version  # Should show 3.10 or higher
+git --version     # Should show a version number
+```
+
+---
+
+### Setup (Choose Your Operating System)
+
+<details>
+<summary><b>🪟 Windows</b> (Click to expand)</summary>
+
+```bash
+# 1. Clone the project
 git clone https://github.com/reddotai/sg-expense-tracker-bot.git
+
+# 2. Go into the folder
 cd sg-expense-tracker-bot
-python3 -m venv venv
-source venv/bin/activate
+
+# 3. Create virtual environment
+python -m venv venv
+
+# 4. Activate virtual environment
+venv\Scripts\activate
+
+# 5. Install dependencies
 pip install -r requirements.txt
 
-# 2. Set up your Telegram bot
-# - Message @BotFather on Telegram
-# - Create a new bot
-# - Copy the API token
+# 6. Create environment file
+copy .env.example .env
 
-# 3. Set up Gemini API
-# - Go to https://aistudio.google.com/app/apikey
-# - Create an API key
+# 7. Edit .env file with your editor
+# Add your TELEGRAM_BOT_TOKEN and GEMINI_API_KEY
 
-# 4. Configure environment variables
-export TELEGRAM_BOT_TOKEN="your_telegram_token"
-export GEMINI_API_KEY="your_gemini_key"
+# 8. Run the bot
+python bot.py
+```
 
-# 5. Run the bot
+</details>
+
+<details>
+<summary><b>🍎 Mac</b> (Click to expand)</summary>
+
+```bash
+# 1. Clone the project
+git clone https://github.com/reddotai/sg-expense-tracker-bot.git
+
+# 2. Go into the folder
+cd sg-expense-tracker-bot
+
+# 3. Create virtual environment
+python3 -m venv venv
+
+# 4. Activate virtual environment
+source venv/bin/activate
+
+# 5. Install dependencies
+pip3 install -r requirements.txt
+
+# 6. Create environment file
+cp .env.example .env
+
+# 7. Edit .env file
+# Use TextEdit: open -e .env
+# Or VS Code: code .env
+
+# 8. Run the bot
 python3 bot.py
 ```
+
+</details>
+
+<details>
+<summary><b>🐧 Linux</b> (Click to expand)</summary>
+
+```bash
+# 1. Clone the project
+git clone https://github.com/reddotai/sg-expense-tracker-bot.git
+
+# 2. Go into the folder
+cd sg-expense-tracker-bot
+
+# 3. Create virtual environment
+python3 -m venv venv
+
+# 4. Activate virtual environment
+source venv/bin/activate
+
+# 5. Install dependencies
+pip3 install -r requirements.txt
+
+# 6. Create environment file
+cp .env.example .env
+
+# 7. Edit .env file
+# nano .env    # or vim .env, or any editor
+
+# 8. Run the bot
+python3 bot.py
+```
+
+</details>
+
+---
+
+### What Each Command Does
+
+| Command | What It Does |
+|---------|--------------|
+| `git clone` | Downloads the project from GitHub |
+| `cd` | Changes to the project folder |
+| `python -m venv venv` | Creates an isolated Python environment |
+| `source venv/bin/activate` (Mac/Linux) or `venv\Scripts\activate` (Windows) | Activates the isolated environment |
+| `pip install` | Downloads required libraries |
+| `copy` or `cp` | Creates your personal settings file |
+
+---
+
+### Get Your API Keys
+
+**Telegram Bot Token:**
+1. Open Telegram and message [@BotFather](https://t.me/botfather)
+2. Type `/newbot`
+3. Give your bot a name (e.g., "My Expense Tracker")
+4. Give it a username ending in "bot" (e.g., "myexpense_bot")
+5. Copy the token (looks like: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+
+**Gemini API Key:**
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy the key (starts with `AIza...`)
+
+---
+
+## Common Setup Problems
+
+### "'git' is not recognized" or "command not found"
+**Problem:** Git is not installed  
+**Fix:** Download and install Git from https://git-scm.com/downloads
+
+### "'python' is not recognized" (Windows)
+**Problem:** Python is not installed or not in PATH  
+**Fix:** 
+1. Install Python from https://python.org (check "Add to PATH" during install)
+2. Or use `py` instead of `python` in commands
+
+### "Permission denied" when activating venv (Mac/Linux)
+**Problem:** Script needs execute permissions  
+**Fix:** Run `chmod +x venv/bin/activate` then try again
+
+### "No module named 'telegram'" or similar
+**Problem:** Virtual environment not activated  
+**Fix:** Make sure you see `(venv)` in your prompt before running pip install
+
+### "TELEGRAM_BOT_TOKEN not set"
+**Problem:** .env file not created or edited  
+**Fix:** 
+1. Make sure `.env` file exists (not `.env.example`)
+2. Make sure you replaced the placeholder text with actual keys
+3. No quotes needed around the values
+
+### Bot doesn't respond to messages
+**Checklist:**
+- [ ] Bot is running (you see "Starting bot..." in terminal)
+- [ ] You sent `/start` to the bot first
+- [ ] You're messaging the correct bot (check the username)
+- [ ] Your API keys are correct (no extra spaces)
+
+---
+
+### Edit Your .env File
+
+Open `.env` in your editor and add:
+
+```bash
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+GEMINI_API_KEY=AIzaSyYourActualKeyHere
+```
+
+**Replace the values with your actual keys!**
 
 ---
 

@@ -54,22 +54,23 @@ GST_RATE = 0.09  # 9% GST
 
 # Budget defaults (SGD)
 DEFAULT_BUDGETS = {
-    'groceries': 500,
-    'transport': 200,
-    'food_delivery': 150,
-    'hawker': 200,
-    'dining': 300,
-    'petrol': 250,
-    'shopping': 200,
-    'electronics': 150,
-    'utilities': 150,
-    'healthcare': 100,
-    'entertainment': 100,
-    'education': 200,
-    'travel': 300,
-    'insurance': 200,
-    'subscriptions': 50,
-    'others': 200
+    'groceries': 600,  # Increased from 500
+    'transport': 250,  # Increased from 200
+    'food_delivery': 100,  # Decreased from 150
+    'hawker': 250,  # Increased from 200
+    'dining': 250,  # Decreased from 300
+    'petrol': 300,  # Increased from 250
+    'shopping': 150,  # Decreased from 200
+    'electronics': 100,  # Decreased from 150
+    'utilities': 200,  # Increased from 150
+    'healthcare': 150,  # Increased from 100
+    'entertainment': 150,  # Increased from 100
+    'education': 250,  # Increased from 200
+    'travel': 500,  # Increased from 300
+    'insurance': 300,  # Increased from 200
+    'subscriptions': 80,  # Increased from 50
+    'personal_care': 100,  # New category
+    'others': 150  # Decreased from 200
 }
 
 

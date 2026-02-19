@@ -61,11 +61,18 @@ VENDOR_CATEGORIES = {
         'gain city', 'audio house', 'apple store', 'istudio',
         'sim lim', 'funan', 'mustafa', 'ban leong'
     ],
-    
+
+    # Personal Care / Beauty (must come before shopping to match beauty vendors first)
+    'personal_care': [
+        'watsons', 'guardian', 'sasa', 'sephora', 'innisfree',
+        'the body shop', 'l\'occitane', 'kiehl\'s', 'clinique',
+        'loreal', 'maybelline', 'skincare', 'hair salon'
+    ],
+
     # Shopping / Retail (general)
     'shopping': [
         'uniqlo', 'h&m', 'zara', 'cotton on', 'muji', 'daiso',
-        'miniso', 'watsons', 'guardian', 'ntuc unity', 'ikea',
+        'miniso', 'ntuc unity', 'ikea',
         'lazada', 'shopee', 'amazon', 'qoo10', 'carousell',
         'tangs', 'takashimaya', 'isetan', 'metro', 'robinsons',
         'og', 'bugis junction', 'vivo city', 'ion orchard',
@@ -165,6 +172,7 @@ def get_category_emoji(category: str) -> str:
         'travel': '✈️',
         'insurance': '🛡️',
         'subscriptions': '📋',
+        'personal_care': '💄',  # Added for new category
         'others': '📦'
     }
     return emojis.get(category, '📦')
