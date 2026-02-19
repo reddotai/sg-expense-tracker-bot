@@ -5,23 +5,26 @@ Maps common vendors to spending categories.
 """
 
 # Singapore vendor categories
+# NOTE: Order matters! More specific patterns should come BEFORE general ones
+# e.g., 'grabfood' before 'grab', 'cs fresh' before 'cs'
 VENDOR_CATEGORIES = {
     # Groceries
     'groceries': [
         'ntuc', 'fairprice', 'cold storage', 'sheng siong', 'giant',
-        'prime supermarket', 'market place', 'little farms', ' CS ',
-        'fair price', 'shengsiong'
+        'prime supermarket', 'market place', 'little farms', 'cs fresh',
+        'fair price', 'shengsiong', '7-eleven', 'cheers'
+    ],
+    
+    # Food Delivery (MUST come before transport to match GrabFood before Grab)
+    'food_delivery': [
+        'grabfood', 'foodpanda', 'deliveroo', 'whyq', 'honestbee'
     ],
     
     # Transport
     'transport': [
         'grab', 'gojek', 'comfortdelgro', 'comfort', 'citycab', 'taxi',
-        'go-jek', 'grabshare', 'grabcar', 'grabhitch', 'cdg', 'transcab'
-    ],
-    
-    # Food Delivery
-    'food_delivery': [
-        'grabfood', 'foodpanda', 'deliveroo', 'whyq', 'honestbee'
+        'go-jek', 'grabshare', 'grabcar', 'grabhitch', 'cdg', 'transcab',
+        'gojek'
     ],
     
     # Hawker / Food Court
@@ -34,7 +37,8 @@ VENDOR_CATEGORIES = {
     'dining': [
         'restaurant', 'cafe', 'coffee', 'starbucks', 'coffee bean',
         'toast box', 'ya kun', 'kfc', 'mcdonald', 'burger king',
-        'pizza hut', 'domino', 'subway', 'sushi', 'ramen', 'steakhouse'
+        'pizza hut', 'domino', 'subway', 'sushi', 'ramen', 'steakhouse',
+        'saizeriya', 'sushi tei', 'crystal jade'
     ],
     
     # Petrol
@@ -42,11 +46,17 @@ VENDOR_CATEGORIES = {
         'shell', 'esso', 'caltex', 'spc', 'sinopec'
     ],
     
-    # Shopping / Retail
+    # Electronics (separate from shopping for Exercise 3)
+    'electronics': [
+        'challenger', 'courts', 'best denki', 'harvey norman',
+        'gain city', 'audio house', 'apple store', 'istudio'
+    ],
+    
+    # Shopping / Retail (general)
     'shopping': [
         'uniqlo', 'h&m', 'zara', 'cotton on', 'muji', 'daiso',
-        'miniso', 'watsons', 'guardian', 'ntuc unity', 'challenger',
-        'courts', 'best denki', 'harvey norman', 'ikea'
+        'miniso', 'watsons', 'guardian', 'ntuc unity', 'ikea',
+        'lazada', 'shopee', 'amazon'
     ],
     
     # Utilities / Bills
@@ -100,6 +110,7 @@ def get_category_emoji(category: str) -> str:
         'dining': '🍽️',
         'petrol': '⛽',
         'shopping': '🛍️',
+        'electronics': '💻',
         'utilities': '💡',
         'healthcare': '🏥',
         'entertainment': '🎬',

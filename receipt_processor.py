@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 Receipt processing using Google Gemini Vision API.
+Uses the new google.genai package (not deprecated google.generativeai).
 """
 
 import logging
 from typing import Optional, Dict, List
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -22,28 +24,30 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
         Dictionary with vendor, amount, date, items or None if failed
     """
     try:
-        # Configure Gemini
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Create client with API key
+        client = genai.Client(api_key=api_key)
         
         # Create prompt for receipt extraction
         prompt = """
         Extract the following information from this receipt:
         1. Vendor/Store name
-        2. Total amount (final amount paid)
+        2. Total amount (final amount paid, after GST/service charge if applicable)
         3. Date of purchase (if visible)
         4. List of items (if readable)
+        5. GST amount (if shown separately)
         
         Return ONLY a JSON object in this exact format:
         {
             "vendor": "Store Name",
             "amount": 47.85,
             "date": "2024-02-19",
-            "items": ["item1", "item2"]
+            "items": ["item1", "item2"],
+            "gst_amount": 3.95
         }
         
         If date is not visible, use null.
         If items are not readable, use empty array.
+        If GST is not shown, use null for gst_amount.
         Amount should be a number (not string), without currency symbol.
         """
         
@@ -54,7 +58,10 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
         image = Image.open(io.BytesIO(photo_bytes))
         
         # Generate response
-        response = model.generate_content([prompt, image])
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=[prompt, image]
+        )
         
         # Parse the response
         import json
@@ -75,7 +82,8 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
                     'vendor': data['vendor'],
                     'amount': float(data['amount']),
                     'date': data.get('date'),
-                    'items': data.get('items', [])
+                    'items': data.get('items', []),
+                    'gst_amount': data.get('gst_amount')
                 }
         
         logger.warning(f"Could not parse receipt. Response: {text}")
@@ -88,7 +96,6 @@ def process_receipt(photo_bytes: bytearray, api_key: str) -> Optional[Dict]:
 
 def test_receipt_processor():
     """Test the receipt processor with a sample image."""
-    # This would be used for testing
     print("Receipt processor loaded successfully")
 
 

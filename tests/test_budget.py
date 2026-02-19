@@ -3,7 +3,13 @@ Tests for budget calculations.
 """
 
 import pytest
-from budget import check_budget, get_budget_status, DEFAULT_BUDGETS
+from datetime import datetime
+from budget import check_budget, get_budget_status
+from config import DEFAULT_BUDGETS
+
+
+# Get current month for test data
+CURRENT_MONTH = datetime.now().strftime('%Y-%m')
 
 
 class TestCheckBudget:
@@ -19,7 +25,7 @@ class TestCheckBudget:
         """Should warn at 80% of budget."""
         # Add spending to reach 80% of 500 = 400
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 400.0, '2024-02-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 400.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         result = check_budget(12345, 'groceries', 0.0)
         
@@ -31,7 +37,7 @@ class TestCheckBudget:
         """Should alert when over budget."""
         # Add spending to exceed 500 limit
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 450.0, '2024-02-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 450.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         result = check_budget(12345, 'groceries', 100.0)  # Would make it 550
         
@@ -42,7 +48,7 @@ class TestCheckBudget:
     def test_exactly_at_budget(self, temp_db):
         """Should not warn when exactly at budget."""
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 500.0, '2024-02-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 500.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         result = check_budget(12345, 'groceries', 0.0)
         
@@ -67,7 +73,7 @@ class TestGetBudgetStatus:
     def test_calculations_correct(self, temp_db):
         """Budget calculations should be correct."""
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 100.0, '2024-02-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 100.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         status = get_budget_status(12345)
         
@@ -79,7 +85,7 @@ class TestGetBudgetStatus:
     def test_percentage_calculation(self, temp_db):
         """Percentage should be calculated correctly."""
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 250.0, '2024-02-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 250.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         status = get_budget_status(12345)
         
@@ -101,3 +107,8 @@ class TestDefaultBudgets:
         
         # Transport should be reasonable
         assert 100 <= DEFAULT_BUDGETS['transport'] <= 500
+    
+    def test_electronics_budget_exists(self):
+        """Electronics category should have a budget."""
+        assert 'electronics' in DEFAULT_BUDGETS
+        assert DEFAULT_BUDGETS['electronics'] > 0

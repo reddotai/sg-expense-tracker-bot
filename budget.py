@@ -9,21 +9,7 @@ Also remove budget-related code from bot.py and config.py.
 
 from typing import Optional, Dict
 from database import get_monthly_summary
-
-# Default budget limits (can be customized per user)
-DEFAULT_BUDGETS = {
-    'groceries': 500,
-    'transport': 200,
-    'food_delivery': 150,
-    'hawker': 200,
-    'dining': 300,
-    'petrol': 250,
-    'shopping': 200,
-    'utilities': 150,
-    'healthcare': 100,
-    'entertainment': 100,
-    'others': 200
-}
+from config import DEFAULT_BUDGETS
 
 
 def check_budget(user_id: int, category: str, amount: float) -> Optional[str]:

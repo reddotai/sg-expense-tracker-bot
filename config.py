@@ -32,6 +32,7 @@ DEFAULT_BUDGETS = {
     'dining': 300,
     'petrol': 250,
     'shopping': 200,
+    'electronics': 150,
     'utilities': 150,
     'healthcare': 100,
     'entertainment': 100,
