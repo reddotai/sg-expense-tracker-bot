@@ -439,3 +439,13 @@ Want to run this without managing a server? See Exercise 5 (coming soon) on migr
 **Built in 3 hours. No certificate required.**
 
 If this helps you track your spending, star the repo and share it.
+
+---
+
+## About This Project
+
+This project is part of **Better Than SkillsFuture** — practical, hands-on learning for Singapore professionals.
+
+**Learn more:** [reddotai.substack.com](https://reddotai.substack.com)
+
+*Built with curiosity, caffeine, and a healthy disregard for boring classroom learning.*
