@@ -58,7 +58,7 @@ class TestExportToExcel:
         filename = export_to_excel(12345, 'test_export.xlsx')
         
         # Read summary sheet
-        df = pd.read_excel(filename, sheet_name='Summary by Category')
+        df = pd.read_excel(filename, sheet_name='Summary by Category', index_col=0)
         
         assert 'groceries' in df.index
         assert df.loc['groceries', 'Total Amount'] == 80.0

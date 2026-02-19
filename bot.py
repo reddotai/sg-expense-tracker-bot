@@ -23,7 +23,8 @@ from dotenv import load_dotenv
 from receipt_processor import process_receipt
 from database import init_db, add_transaction, get_monthly_summary
 from categories import categorize_vendor
-from budget import check_budget
+from budget import check_budget, get_budget_status
+from export import export_to_excel, export_to_csv
 
 # Load environment variables
 load_dotenv()
@@ -109,25 +110,69 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def budget_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Set or view budget limits."""
-    await update.message.reply_text(
-        "💰 Budget feature coming soon!\n\n"
-        "You'll be able to set monthly limits like:\n"
-        "- Food: $500\n"
-        "- Transport: $200\n\n"
-        "I'll alert you when you're close to your limit."
-    )
+    """Show budget status."""
+    user_id = update.effective_user.id
+    
+    # Get budget status
+    status = get_budget_status(user_id)
+    
+    # Build message
+    message = "💰 Budget Status\n"
+    message += "=" * 30 + "\n\n"
+    
+    has_spending = any(s['spent'] > 0 for s in status.values())
+    
+    if not has_spending:
+        message += "No spending recorded yet.\n"
+        message += "Send me a receipt photo to get started!"
+        await update.message.reply_text(message)
+        return
+    
+    for category, data in status.items():
+        if data['spent'] > 0:  # Only show categories with spending
+            emoji = "🟢" if data['percentage'] < 80 else "🟡" if data['percentage'] < 100 else "🔴"
+            message += f"{emoji} {category.capitalize()}\n"
+            message += f"   Spent: ${data['spent']:.2f} / ${data['budget']:.2f}\n"
+            message += f"   {data['percentage']:.1f}% used\n\n"
+    
+    await update.message.reply_text(message)
 
 
 async def export_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Export data to Excel."""
-    await update.message.reply_text(
-        "📤 Export feature coming soon!\n\n"
-        "You'll be able to download:\n"
-        "- Monthly Excel report\n"
-        "- CSV for tax filing\n"
-        "- CPF claimable expenses summary"
-    )
+    user_id = update.effective_user.id
+    
+    await update.message.reply_text("📊 Generating export...")
+    
+    try:
+        # Generate Excel file
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"expenses_{user_id}_{timestamp}.xlsx"
+        
+        filepath = export_to_excel(user_id, filename)
+        
+        # Send file to user
+        with open(filepath, 'rb') as f:
+            await update.message.reply_document(
+                document=f,
+                filename=filename,
+                caption="📊 Your expense report is ready!"
+            )
+        
+        # Clean up file after sending
+        import os
+        os.remove(filepath)
+        
+    except ValueError as e:
+        await update.message.reply_text(
+            f"❌ {str(e)}\nSend some receipts first!"
+        )
+    except Exception as e:
+        logger.error(f"Export error: {e}")
+        await update.message.reply_text(
+            "❌ Sorry, couldn't generate export. Try again later."
+        )
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

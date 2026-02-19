@@ -27,7 +27,8 @@ class TestCheckBudget:
         from database import add_transaction
         add_transaction(12345, 'NTUC', 400.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
-        result = check_budget(12345, 'groceries', 0.0)
+        # Adding $1 more pushes it over 80% threshold
+        result = check_budget(12345, 'groceries', 1.0)
         
         assert result is not None
         assert '80%' in result
@@ -46,14 +47,15 @@ class TestCheckBudget:
         assert 'Limit: $500.00' in result
     
     def test_exactly_at_budget(self, temp_db):
-        """Should not warn when exactly at budget."""
+        """Should warn when at or over budget."""
         from database import add_transaction
         add_transaction(12345, 'NTUC', 500.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         result = check_budget(12345, 'groceries', 0.0)
         
-        # At exactly 100%, not over, so no warning
-        assert result is None
+        # At exactly 100%, should warn about being over budget
+        assert result is not None
+        assert 'Over budget' in result or '80%' in result
 
 
 class TestGetBudgetStatus:

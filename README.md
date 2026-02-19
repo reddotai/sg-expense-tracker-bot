@@ -29,6 +29,9 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
+# Note: If you get import errors, also install:
+# pip install google-genai
+
 # 2. Set up your Telegram bot
 # - Message @BotFather on Telegram
 # - Create a new bot
@@ -145,6 +148,32 @@ Search for these markers to remove features you don't need:
 | GST detection | `receipt_processor.py` | Remove GST extraction logic |
 
 See `CLAUDE.md` for detailed guidance.
+
+---
+
+## Troubleshooting
+
+### "No module named 'google.genai'"
+```bash
+pip install google-genai
+```
+
+### "TELEGRAM_BOT_TOKEN not set"
+You need to create a bot with @BotFather first. See Exercise 1.
+
+### "GEMINI_API_KEY not set"
+Get your API key from https://makersuite.google.com/app/apikey
+
+### Bot doesn't respond to photos
+- Make sure you've set both environment variables
+- Check that the bot is running without errors
+- Try sending a clearer photo with good lighting
+
+### Tests fail with "ImportError"
+Some tests require the `google-genai` package. Install it:
+```bash
+pip install google-genai
+```
 
 ---
 
