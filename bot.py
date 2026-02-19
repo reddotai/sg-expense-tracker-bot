@@ -7,8 +7,10 @@ Uses Gemini AI for receipt parsing.
 
 import os
 import logging
+import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
+from functools import wraps
 
 from telegram import Update
 from telegram.ext import (
@@ -45,6 +47,57 @@ logger = logging.getLogger(__name__)
 # Bot configuration
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+
+# Rate limiting storage (in production, use Redis or database)
+user_last_request: Dict[int, float] = {}
+user_daily_count: Dict[int, Dict[str, int]] = {}  # user_id -> {date: count}
+
+# Constants
+MAX_PHOTO_SIZE_MB = 10
+RATE_LIMIT_SECONDS = 3
+MAX_DAILY_RECEIPTS = 50  # Prevent API quota exhaustion
+
+
+def rate_limit(seconds: int = RATE_LIMIT_SECONDS):
+    """Decorator to rate limit commands per user."""
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            user_id = update.effective_user.id
+            now = time.time()
+            
+            if user_id in user_last_request:
+                elapsed = now - user_last_request[user_id]
+                if elapsed < seconds:
+                    await update.message.reply_text(
+                        f"⏳ Please wait {seconds - int(elapsed)} seconds before trying again."
+                    )
+                    return
+            
+            user_last_request[user_id] = now
+            return await func(update, context)
+        return wrapper
+    return decorator
+
+
+def check_daily_limit(user_id: int, limit: int = MAX_DAILY_RECEIPTS) -> bool:
+    """Check if user has exceeded daily receipt limit."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    if user_id not in user_daily_count:
+        user_daily_count[user_id] = {}
+    
+    if today not in user_daily_count[user_id]:
+        user_daily_count[user_id][today] = 0
+    
+    return user_daily_count[user_id][today] < limit
+
+
+def increment_daily_count(user_id: int):
+    """Increment user's daily receipt count."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    if user_id in user_daily_count and today in user_daily_count[user_id]:
+        user_daily_count[user_id][today] += 1
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -269,18 +322,54 @@ async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Process receipt photos."""
+    """Process receipt photos with security checks."""
     user_id = update.effective_user.id
+    
+    # Rate limiting check
+    now = time.time()
+    if user_id in user_last_request:
+        elapsed = now - user_last_request[user_id]
+        if elapsed < RATE_LIMIT_SECONDS:
+            await update.message.reply_text(
+                f"⏳ Please wait {RATE_LIMIT_SECONDS - int(elapsed)} seconds between receipts."
+            )
+            return
+    user_last_request[user_id] = now
+    
+    # Daily limit check
+    if not check_daily_limit(user_id):
+        await update.message.reply_text(
+            f"⚠️ Daily limit reached ({MAX_DAILY_RECEIPTS} receipts/day).\n"
+            "This helps prevent API quota exhaustion.\n"
+            "Try again tomorrow!"
+        )
+        return
+    
+    # Get the photo file
+    photo = update.message.photo[-1]  # Get largest photo
+    
+    # File size validation (prevent crashes from huge images)
+    if photo.file_size and photo.file_size > MAX_PHOTO_SIZE_MB * 1024 * 1024:
+        await update.message.reply_text(
+            f"❌ Image too large ({photo.file_size // (1024*1024)}MB).\n"
+            f"Maximum size: {MAX_PHOTO_SIZE_MB}MB.\n"
+            "Please compress or crop the image."
+        )
+        return
     
     await update.message.reply_text("📸 Processing your receipt...")
     
     try:
-        # Get the photo file
-        photo = update.message.photo[-1]  # Get largest photo
-        photo_file = await photo.get_file()
-        
         # Download to memory
+        photo_file = await photo.get_file()
         photo_bytes = await photo_file.download_as_bytearray()
+        
+        # Validate image format (basic check)
+        if len(photo_bytes) < 100:
+            await update.message.reply_text(
+                "❌ Invalid image. Please send a proper photo."
+            )
+            return
         
         # Process with Gemini
         receipt_data = process_receipt(photo_bytes, GEMINI_API_KEY)
@@ -292,8 +381,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
             return
         
+        # Increment daily count on success
+        increment_daily_count(user_id)
+        
+        # Sanitize vendor name (prevent XSS/log injection)
+        vendor = receipt_data['vendor']
+        if vendor:
+            # Remove control characters and limit length
+            vendor = ''.join(char for char in vendor if ord(char) >= 32)[:100]
+        if not vendor:
+            vendor = "Unknown Vendor"
+        receipt_data['vendor'] = vendor
+        
         # Categorize the vendor (smart categorization with AI fallback)
-        category = smart_categorize(receipt_data['vendor'], user_id, GEMINI_API_KEY)
+        category = smart_categorize(vendor, user_id, GEMINI_API_KEY)
         
         # Add to database
         transaction_id = add_transaction(

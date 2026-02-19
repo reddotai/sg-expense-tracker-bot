@@ -7,6 +7,7 @@ This entire file can be removed if you don't want export functionality.
 Also remove export-related code from bot.py.
 """
 
+import re
 import pandas as pd
 from datetime import datetime
 from typing import Optional
@@ -15,13 +16,31 @@ from database import get_all_transactions
 from config import EXPORT_DIR
 
 
+def sanitize_filename(filename: str) -> str:
+    """
+    Sanitize filename to prevent path traversal attacks.
+    Removes any path components and special characters.
+    """
+    # Remove any path components
+    filename = Path(filename).name
+    
+    # Remove any non-alphanumeric characters except safe ones
+    filename = re.sub(r'[^\w\-\.]', '_', filename)
+    
+    # Ensure it doesn't start with a dot (hidden file)
+    if filename.startswith('.'):
+        filename = 'export_' + filename
+    
+    return filename
+
+
 def export_to_excel(user_id: int, filename: Optional[str] = None) -> str:
     """
     Export user transactions to Excel file.
     
     Args:
         user_id: Telegram user ID
-        filename: Optional custom filename
+        filename: Optional custom filename (will be sanitized)
     
     Returns:
         Path to the generated Excel file
@@ -42,9 +61,21 @@ def export_to_excel(user_id: int, filename: Optional[str] = None) -> str:
     if not filename:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"expenses_{timestamp}.xlsx"
+    else:
+        # Sanitize user-provided filename
+        filename = sanitize_filename(filename)
+        # Ensure correct extension
+        if not filename.endswith('.xlsx'):
+            filename += '.xlsx'
     
     # Full path in export directory
     filepath = EXPORT_DIR / filename
+    
+    # Security check: ensure path is within EXPORT_DIR
+    try:
+        filepath.resolve().relative_to(EXPORT_DIR.resolve())
+    except ValueError:
+        raise ValueError("Invalid filename")
     
     # Create Excel writer
     with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
@@ -76,8 +107,20 @@ def export_to_csv(user_id: int, filename: Optional[str] = None) -> str:
     if not filename:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"expenses_{timestamp}.csv"
+    else:
+        # Sanitize user-provided filename
+        filename = sanitize_filename(filename)
+        if not filename.endswith('.csv'):
+            filename += '.csv'
     
     filepath = EXPORT_DIR / filename
+    
+    # Security check: ensure path is within EXPORT_DIR
+    try:
+        filepath.resolve().relative_to(EXPORT_DIR.resolve())
+    except ValueError:
+        raise ValueError("Invalid filename")
+    
     df.to_csv(filepath, index=False)
     return str(filepath)
 
