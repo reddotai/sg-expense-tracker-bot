@@ -116,9 +116,6 @@ def escape_for_display(text: str) -> str:
     This prevents XSS if data is later used in a web context.
     """
     return html.escape(text)
-    vendor = vendor.strip()
-    
-    return vendor if vendor else "Unknown Vendor"
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -425,39 +422,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "❌ Sorry, something went wrong.\n"
             "Please try again with a clearer photo."
         )
-        
-        # Add to database
-        transaction_id = add_transaction(
-            user_id=user_id,
-            vendor=receipt_data['vendor'],
-            amount=receipt_data['amount'],
-            date=receipt_data['date'],
-            category=category,
-            items=receipt_data.get('items', [])
-        )
-        
-        # Build response
-        message = f"✅ Expense recorded!\n\n"
-        message += f"🏪 {receipt_data['vendor']}\n"
-        message += f"💵 ${receipt_data['amount']:.2f}\n"
-        message += f"📁 {category}\n"
-        
-        if receipt_data.get('date'):
-            message += f"📅 {receipt_data['date']}\n"
-        
-        # Check budget
-        budget_status = check_budget(user_id, category, receipt_data['amount'])
-        if budget_status:
-            message += f"\n⚠️ {budget_status}"
-        
-        await update.message.reply_text(message)
-        
-    except Exception as e:
-        logger.error(f"Error processing receipt: {e}")
-        await update.message.reply_text(
-            "❌ Sorry, something went wrong.\n"
-            "Please try again with a clearer photo."
-        )
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -474,12 +438,36 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 def main() -> None:
     """Start the bot."""
-    # Validate environment variables
-    if not TELEGRAM_BOT_TOKEN:
-        raise ValueError("TELEGRAM_BOT_TOKEN not set. Get it from @BotFather")
+    # Check for placeholder values and provide friendly error messages
+    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN in ['your_telegram_bot_token_here', 'dummy_token_for_testing']:
+        print("🤖 Welcome to Singapore Expense Tracker!")
+        print()
+        print("❌ TELEGRAM_BOT_TOKEN not configured")
+        print()
+        print("To set up your bot:")
+        print("1. Message @BotFather on Telegram")
+        print("2. Create a new bot with /newbot")
+        print("3. Copy the token (looks like: 123456789:ABCdef...)")
+        print("4. Edit the .env file and add your token:")
+        print("   TELEGRAM_BOT_TOKEN=your_actual_token_here")
+        print()
+        print("Need help? See the README.md for detailed instructions.")
+        return
     
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY not set. Get it from Google AI Studio")
+    if not GEMINI_API_KEY or GEMINI_API_KEY in ['your_gemini_api_key_here', 'dummy_key_for_testing']:
+        print("🤖 Welcome to Singapore Expense Tracker!")
+        print()
+        print("❌ GEMINI_API_KEY not configured")
+        print()
+        print("To get your API key:")
+        print("1. Go to https://aistudio.google.com/app/apikey")
+        print("2. Sign in with your Google account")
+        print("3. Click 'Create API Key'")
+        print("4. Edit the .env file and add your key:")
+        print("   GEMINI_API_KEY=your_actual_key_here")
+        print()
+        print("Need help? See the README.md for detailed instructions.")
+        return
     
     # Initialize database
     init_db()

@@ -69,10 +69,19 @@ VENDOR_CATEGORIES = {
         'loreal', 'maybelline', 'skincare', 'hair salon'
     ],
 
+    # Home & Garden (NEW CATEGORY ADDED - before shopping to match ikea before general shopping)
+    'home_garden': [
+        'ikea', 'homefix', 'selffix', 'giant hardware', 'home depot',
+        'ace hardware', 'kurve', 'komplett', 'hipvan', 'forty two',
+        'castlery', 'journey east', 'originals', 'scanteak',
+        'bloomthis', 'far east flora', 'potta plantta', 'noah garden',
+        'ikea restaurant', 'ikea cafe'
+    ],
+
     # Shopping / Retail (general)
     'shopping': [
         'uniqlo', 'h&m', 'zara', 'cotton on', 'muji', 'daiso',
-        'miniso', 'ntuc unity', 'ikea',
+        'miniso', 'ntuc unity',
         'lazada', 'shopee', 'amazon', 'qoo10', 'carousell',
         'tangs', 'takashimaya', 'isetan', 'metro', 'robinsons',
         'og', 'bugis junction', 'vivo city', 'ion orchard',
@@ -96,12 +105,21 @@ VENDOR_CATEGORIES = {
         'tcm', 'traditional chinese medicine', 'physio', 'chiro'
     ],
     
+    # Fitness / Gym (NEW CATEGORY - must come before entertainment)
+    'fitness': [
+        'gym', 'fitness', 'anytime fitness', 'fitness first', 'gymmboxx',
+        'active sg', 'pure fitness', 'virgin active', 'true fitness',
+        'amazing fitness', 'fitness corner', 'yoga', 'pilates',
+        'spin class', 'crossfit', 'f45', 'barry\'s bootcamp',
+        'personal trainer', 'pt session', 'sports hall', 'swimming pool',
+        'sauna', 'spa', 'wellness', 'health club'
+    ],
+    
     # Entertainment
     'entertainment': [
         'cinema', 'golden village', 'shaw', 'cathay', 'netflix',
         'spotify', 'disney+', 'hbo', 'amazon prime', 'youtube',
-        'gym', 'fitness', 'anytime fitness', 'fitness first',
-        'true fitness', 'amusement', 'arcade', 'bowling',
+        'amusement', 'arcade', 'bowling',
         'karaoke', 'ktv', 'party world', 'teo heng'
     ],
     
@@ -172,7 +190,9 @@ def get_category_emoji(category: str) -> str:
         'travel': '✈️',
         'insurance': '🛡️',
         'subscriptions': '📋',
-        'personal_care': '💄',  # Added for new category
+        'personal_care': '💄',
+        'home_garden': '🏠',
+        'fitness': '💪',       # NEW: Fitness category
         'others': '📦'
     }
     return emojis.get(category, '📦')

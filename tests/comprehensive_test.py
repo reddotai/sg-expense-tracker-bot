@@ -216,13 +216,13 @@ Supported receipts:
         # Test 80% warning
         # Current spending: 47.85, need to reach ~80% of budget
         # Add transactions to get close to 80% threshold
-        # 47.85 + n*50 >= 0.8 * 600 = 480, so n >= (480-47.85)/50 = 8.6, so 9 transactions
-        for i in range(9):
+        # 47.85 + n*50 >= 0.8 * 650 = 520, so n >= (520-47.85)/50 = 9.4, so 10 transactions
+        for i in range(10):
             day = min(20 + i, 28)  # Ensure valid day for all months
             add_transaction(TEST_USER_ID, 'NTUC', 50.0, f'{current_month}-{day:02d}', 'groceries', [])
         
-        # Now check - current should be 47.85 + 450 = 497.85
-        # Adding 10 more = 507.85 which exceeds 480 (80%)
+        # Now check - current should be 47.85 + 500 = 547.85
+        # Adding 10 more = 557.85 which exceeds 520 (80%)
         warning = check_budget(TEST_USER_ID, 'groceries', 10.0)
         passed = warning is not None and ('80%' in warning or 'remaining' in warning.lower())
         if print_test("80% budget warning works", passed, f"Warning: {warning}"):

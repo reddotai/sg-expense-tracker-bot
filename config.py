@@ -54,23 +54,25 @@ GST_RATE = 0.09  # 9% GST
 
 # Budget defaults (SGD)
 DEFAULT_BUDGETS = {
-    'groceries': 600,  # Increased from 500
-    'transport': 250,  # Increased from 200
-    'food_delivery': 100,  # Decreased from 150
-    'hawker': 250,  # Increased from 200
-    'dining': 250,  # Decreased from 300
-    'petrol': 300,  # Increased from 250
-    'shopping': 150,  # Decreased from 200
-    'electronics': 100,  # Decreased from 150
-    'utilities': 200,  # Increased from 150
-    'healthcare': 150,  # Increased from 100
-    'entertainment': 150,  # Increased from 100
-    'education': 250,  # Increased from 200
-    'travel': 500,  # Increased from 300
-    'insurance': 300,  # Increased from 200
-    'subscriptions': 80,  # Increased from 50
-    'personal_care': 100,  # New category
-    'others': 150  # Decreased from 200
+    'groceries': 650,  # Increased from 600
+    'transport': 280,  # Increased from 250
+    'food_delivery': 120,  # Increased from 100
+    'hawker': 280,  # Increased from 250
+    'dining': 280,  # Increased from 250
+    'petrol': 350,  # Increased from 300
+    'shopping': 200,  # Increased from 150
+    'electronics': 150,  # Increased from 100
+    'utilities': 250,  # Increased from 200
+    'healthcare': 200,  # Increased from 150
+    'entertainment': 200,  # Increased from 150
+    'education': 300,  # Increased from 250
+    'travel': 600,  # Increased from 500
+    'insurance': 350,  # Increased from 300
+    'subscriptions': 100,  # Increased from 80
+    'personal_care': 120,  # Increased from 100
+    'home_garden': 250,  # Increased from 200
+    'fitness': 150,  # NEW: Budget for Fitness category
+    'others': 200  # Increased from 150
 }
 
 

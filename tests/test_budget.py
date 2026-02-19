@@ -17,15 +17,15 @@ class TestCheckBudget:
     
     def test_under_budget(self, temp_db):
         """Should return None when under budget."""
-        # First transaction in groceries (limit: 600)
+        # First transaction in groceries (limit: 650)
         result = check_budget(12345, 'groceries', 100.0)
         assert result is None
     
     def test_at_80_percent(self, temp_db):
         """Should warn at 80% of budget."""
-        # Add spending to reach 80% of 600 = 480
+        # Add spending to reach 80% of 650 = 520
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 480.0, f'{CURRENT_MONTH}-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 520.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         # Adding $1 more pushes it over 80% threshold
         result = check_budget(12345, 'groceries', 1.0)
@@ -36,20 +36,20 @@ class TestCheckBudget:
     
     def test_over_budget(self, temp_db):
         """Should alert when over budget."""
-        # Add spending to exceed 600 limit
+        # Add spending to exceed 650 limit
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 550.0, f'{CURRENT_MONTH}-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 600.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
-        result = check_budget(12345, 'groceries', 100.0)  # Would make it 650
+        result = check_budget(12345, 'groceries', 100.0)  # Would make it 700
         
         assert result is not None
         assert 'Over budget' in result
-        assert 'Limit: $600.00' in result
+        assert 'Limit: $650.00' in result
     
     def test_exactly_at_budget(self, temp_db):
         """Should warn when at or over budget."""
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 600.0, f'{CURRENT_MONTH}-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 650.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         result = check_budget(12345, 'groceries', 0.0)
         
@@ -79,15 +79,15 @@ class TestGetBudgetStatus:
         
         status = get_budget_status(12345)
         
-        assert status['groceries']['budget'] == 600.0
+        assert status['groceries']['budget'] == 650.0
         assert status['groceries']['spent'] == 100.0
-        assert status['groceries']['remaining'] == 500.0
-        assert status['groceries']['percentage'] == pytest.approx(16.67, 0.01)
+        assert status['groceries']['remaining'] == 550.0
+        assert status['groceries']['percentage'] == pytest.approx(15.38, 0.01)
     
     def test_percentage_calculation(self, temp_db):
         """Percentage should be calculated correctly."""
         from database import add_transaction
-        add_transaction(12345, 'NTUC', 300.0, f'{CURRENT_MONTH}-19', 'groceries', [])
+        add_transaction(12345, 'NTUC', 325.0, f'{CURRENT_MONTH}-19', 'groceries', [])
         
         status = get_budget_status(12345)
         

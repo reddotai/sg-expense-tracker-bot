@@ -59,7 +59,13 @@ class TestCategorizeVendor:
         """Retail stores should be categorized as shopping."""
         assert categorize_vendor('Uniqlo') == 'shopping'
         assert categorize_vendor('H&M') == 'shopping'
-        assert categorize_vendor('IKEA') == 'shopping'
+        assert categorize_vendor('Zara') == 'shopping'
+
+    def test_home_garden(self):
+        """Home and garden stores should be categorized correctly."""
+        assert categorize_vendor('IKEA') == 'home_garden'
+        assert categorize_vendor('HomeFix') == 'home_garden'
+        assert categorize_vendor('Castlery') == 'home_garden'
 
     def test_electronics(self):
         """Electronics stores should be categorized correctly."""
@@ -83,6 +89,15 @@ class TestCategorizeVendor:
         assert categorize_vendor('Watsons') == 'personal_care'
         assert categorize_vendor('Guardian') == 'personal_care'
         assert categorize_vendor('Sephora') == 'personal_care'
+
+    def test_fitness(self):
+        """Fitness/gym vendors should be categorized correctly."""
+        assert categorize_vendor('Anytime Fitness') == 'fitness'
+        assert categorize_vendor('Fitness First') == 'fitness'
+        assert categorize_vendor('Pure Fitness') == 'fitness'
+        assert categorize_vendor('Gymmboxx') == 'fitness'
+        assert categorize_vendor('CrossFit Gym') == 'fitness'
+        assert categorize_vendor('Virgin Active') == 'fitness'
 
     def test_case_insensitive(self):
         """Categorization should be case-insensitive."""
@@ -120,6 +135,7 @@ class TestCategoryEmoji:
         assert get_category_emoji('dining') == '🍽️'
         assert get_category_emoji('electronics') == '💻'
         assert get_category_emoji('personal_care') == '💄'
+        assert get_category_emoji('fitness') == '💪'
 
     def test_unknown_category_returns_default(self):
         """Unknown categories should return default emoji."""
