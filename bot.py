@@ -91,8 +91,9 @@ async def check_ai_rate_limit(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 def sanitize_vendor_name(vendor: str) -> str:
     """
-    Sanitize vendor name for display and storage.
-    Removes control characters, limits length, escapes HTML.
+    Sanitize vendor name for storage.
+    Removes control characters and limits length.
+    NOTE: HTML escaping is done at display time to prevent XSS.
     """
     if not vendor:
         return "Unknown Vendor"
@@ -103,10 +104,18 @@ def sanitize_vendor_name(vendor: str) -> str:
     # Limit length
     vendor = vendor[:100]
     
-    # Escape HTML to prevent XSS
-    vendor = html.escape(vendor)
-    
     # Strip whitespace
+    vendor = vendor.strip()
+    
+    return vendor if vendor else "Unknown Vendor"
+
+
+def escape_for_display(text: str) -> str:
+    """
+    Escape HTML for safe display in Telegram.
+    This prevents XSS if data is later used in a web context.
+    """
+    return html.escape(text)
     vendor = vendor.strip()
     
     return vendor if vendor else "Unknown Vendor"
@@ -394,9 +403,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             items=receipt_data.get('items', [])
         )
         
-        # Build response
+        # Build response (escape for display to prevent XSS)
         message = f"✅ Expense recorded!\n\n"
-        message += f"🏪 {receipt_data['vendor']}\n"
+        message += f"🏪 {escape_for_display(receipt_data['vendor'])}\n"
         message += f"💵 ${receipt_data['amount']:.2f}\n"
         message += f"📁 {category}\n"
         

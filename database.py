@@ -6,13 +6,14 @@ SQLite database operations for expense tracking.
 import sqlite3
 import json
 import time
+import logging
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 
 from config import DATABASE_FILE
 
-# DATABASE_FILE is now imported from config
+logger = logging.getLogger(__name__)
 
 
 def init_db() -> None:
@@ -29,7 +30,7 @@ def init_db() -> None:
             amount REAL NOT NULL,
             date TEXT NOT NULL,
             category TEXT NOT NULL,
-            items TEXT,  -- JSON array of items
+            items TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -52,16 +53,10 @@ def add_transaction(
     category: str,
     items: List[str]
 ) -> int:
-    """
-    Add a new transaction to the database.
-    
-    Returns:
-        The transaction ID
-    """
+    """Add a new transaction to the database."""
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
-    # Use current date if not provided
     if not date:
         date = datetime.now().strftime('%Y-%m-%d')
     
@@ -78,23 +73,13 @@ def add_transaction(
 
 
 def get_monthly_summary(user_id: int, year_month: Optional[str] = None) -> Dict:
-    """
-    Get spending summary for a month.
-    
-    Args:
-        user_id: Telegram user ID
-        year_month: Format "2024-02", defaults to current month
-    
-    Returns:
-        Dictionary with total, by_category, transactions, count
-    """
+    """Get spending summary for a month."""
     if not year_month:
         year_month = datetime.now().strftime('%Y-%m')
     
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     
-    # Get transactions for the month
     cursor.execute('''
         SELECT vendor, amount, date, category, items
         FROM transactions
@@ -104,7 +89,6 @@ def get_monthly_summary(user_id: int, year_month: Optional[str] = None) -> Dict:
     
     transactions = cursor.fetchall()
     
-    # Calculate totals by category
     by_category = {}
     total = 0
     
@@ -170,7 +154,7 @@ def delete_transaction(transaction_id: int, user_id: int) -> bool:
     return deleted
 
 
-# User settings for AI categorization and other preferences
+# User settings
 def init_user_settings_table() -> None:
     """Create user_settings table if not exists."""
     conn = sqlite3.connect(DATABASE_FILE)
@@ -192,7 +176,7 @@ def init_user_settings_table() -> None:
 
 def get_user_setting(user_id: int, key: str, default: str = '') -> str:
     """Get a user setting value."""
-    init_user_settings_table()  # Ensure table exists
+    init_user_settings_table()
     
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
@@ -210,7 +194,7 @@ def get_user_setting(user_id: int, key: str, default: str = '') -> str:
 
 def set_user_setting(user_id: int, key: str, value: str) -> None:
     """Set a user setting value."""
-    init_user_settings_table()  # Ensure table exists
+    init_user_settings_table()
     
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
@@ -227,7 +211,7 @@ def set_user_setting(user_id: int, key: str, value: str) -> None:
     conn.close()
 
 
-# Rate limiting storage (persistent)
+# Rate limiting with atomic operations
 def init_rate_limit_table() -> None:
     """Create rate limiting table if not exists."""
     conn = sqlite3.connect(DATABASE_FILE)
@@ -248,19 +232,11 @@ def init_rate_limit_table() -> None:
     conn.close()
 
 
-def check_rate_limit(user_id: int, limit_type: str, max_requests: int, 
-                     window_seconds: Optional[int] = None) -> tuple[bool, str]:
+def check_rate_limit(user_id: int, limit_type: str, max_requests: int,
+                     window_seconds: Optional[int] = None) -> Tuple[bool, str]:
     """
-    Check if user has exceeded rate limit.
-    
-    Args:
-        user_id: Telegram user ID
-        limit_type: 'daily' or 'burst'
-        max_requests: Maximum allowed requests
-        window_seconds: For burst limits, time window
-    
-    Returns:
-        (allowed: bool, message: str)
+    Atomic rate limit check using database transactions.
+    Prevents race conditions by using BEGIN IMMEDIATE.
     """
     init_rate_limit_table()
     
@@ -270,72 +246,74 @@ def check_rate_limit(user_id: int, limit_type: str, max_requests: int,
     today = datetime.now().strftime('%Y-%m-%d')
     now = time.time()
     
-    # Get current record
-    cursor.execute('''
-        SELECT count, reset_date, last_request FROM rate_limits
-        WHERE user_id = ? AND limit_type = ?
-    ''', (user_id, limit_type))
-    
-    result = cursor.fetchone()
-    
-    if not result:
-        # First request - create record
+    try:
+        # Use IMMEDIATE to prevent race conditions
+        conn.execute('BEGIN IMMEDIATE')
+        
+        # Get current record with locking
         cursor.execute('''
-            INSERT INTO rate_limits (user_id, limit_type, count, reset_date, last_request)
-            VALUES (?, ?, 1, ?, ?)
-        ''', (user_id, limit_type, today, now))
-        conn.commit()
-        conn.close()
-        return True, ""
-    
-    count, reset_date, last_request = result
-    
-    # Check if window has reset
-    if limit_type == 'daily' and reset_date != today:
-        # Reset daily counter
-        cursor.execute('''
-            UPDATE rate_limits 
-            SET count = 1, reset_date = ?, last_request = ?
+            SELECT count, reset_date, last_request FROM rate_limits
             WHERE user_id = ? AND limit_type = ?
-        ''', (today, now, user_id, limit_type))
-        conn.commit()
-        conn.close()
-        return True, ""
-    
-    if limit_type == 'burst' and window_seconds and last_request:
-        if now - last_request > window_seconds:
-            # Reset burst counter
+        ''', (user_id, limit_type))
+        
+        result = cursor.fetchone()
+        
+        if not result:
+            # First request - create record
+            cursor.execute('''
+                INSERT INTO rate_limits (user_id, limit_type, count, reset_date, last_request)
+                VALUES (?, ?, 1, ?, ?)
+            ''', (user_id, limit_type, today, now))
+            conn.commit()
+            return True, ""
+        
+        count, reset_date, last_request = result
+        
+        # Check if window has reset
+        should_reset = False
+        if limit_type == 'daily' and reset_date != today:
+            should_reset = True
+            count = 0
+        elif limit_type == 'burst' and window_seconds and last_request:
+            if now - last_request > window_seconds:
+                should_reset = True
+                count = 0
+        
+        # Check limit before incrementing
+        if count >= max_requests and not should_reset:
+            conn.rollback()
+            if limit_type == 'daily':
+                message = f"⚠️ Daily limit reached ({max_requests} requests/day). Try again tomorrow!"
+            else:
+                message = "⏳ Rate limit exceeded. Please wait a moment."
+            return False, message
+        
+        # Atomic increment
+        if should_reset:
             cursor.execute('''
                 UPDATE rate_limits 
-                SET count = 1, last_request = ?
+                SET count = 1, reset_date = ?, last_request = ?
+                WHERE user_id = ? AND limit_type = ?
+            ''', (today, now, user_id, limit_type))
+        else:
+            cursor.execute('''
+                UPDATE rate_limits 
+                SET count = count + 1, last_request = ?
                 WHERE user_id = ? AND limit_type = ?
             ''', (now, user_id, limit_type))
-            conn.commit()
-            conn.close()
-            return True, ""
-    
-    # Check limit
-    if count >= max_requests:
-        if limit_type == 'daily':
-            message = f"⚠️ Daily limit reached ({max_requests} requests/day). Try again tomorrow!"
-        else:
-            message = f"⏳ Rate limit exceeded. Please wait a moment."
+        
+        conn.commit()
+        return True, ""
+        
+    except sqlite3.Error as e:
+        conn.rollback()
+        logger.error(f"Rate limit database error: {e}")
+        return True, ""  # Fail open
+    finally:
         conn.close()
-        return False, message
-    
-    # Increment counter
-    cursor.execute('''
-        UPDATE rate_limits 
-        SET count = count + 1, last_request = ?
-        WHERE user_id = ? AND limit_type = ?
-    ''', (now, user_id, limit_type))
-    
-    conn.commit()
-    conn.close()
-    return True, ""
 
 
-def get_rate_limit_status(user_id: int, limit_type: str) -> dict:
+def get_rate_limit_status(user_id: int, limit_type: str) -> Dict:
     """Get current rate limit status for user."""
     init_rate_limit_table()
     
@@ -365,4 +343,5 @@ def get_rate_limit_status(user_id: int, limit_type: str) -> dict:
 if __name__ == '__main__':
     init_db()
     init_user_settings_table()
+    init_rate_limit_table()
     print("Database initialized successfully")
