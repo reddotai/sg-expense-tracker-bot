@@ -227,6 +227,41 @@ Add `/export` command that generates Excel with monthly breakdown.
 - Python 3.10+
 - Telegram account
 - Google account (for Gemini API)
+- A computer that stays on while using the bot (see Hosting Options below)
+
+---
+
+## Hosting Options
+
+### Option 1: Run on Your Computer (Easiest)
+Just run `python3 bot.py` on your laptop. The bot works when your computer is on and stops when it sleeps/shuts down.
+
+**Good for:** Personal use, learning, testing
+
+### Option 2: Cheap VPS (~$5/month)
+Rent a small virtual server that stays online 24/7:
+- [DigitalOcean](https://www.digitalocean.com/) - $4/month
+- [Linode](https://www.linode.com/) - $5/month
+- [Hetzner](https://www.hetzner.com/) - €3.79/month
+
+**Good for:** Always-on bot, multiple users, production use
+
+### Option 3: Raspberry Pi (One-time ~$50)
+Buy a Raspberry Pi, leave it plugged in at home. Uses minimal electricity.
+
+**Good for:** Privacy-conscious, tinkerers, learning Linux
+
+---
+
+## Cloud-Native Alternative: Cloudflare Workers
+
+Want to run this without managing a server? See Exercise 5 (coming soon) on migrating to **Cloudflare Workers + Durable Objects**:
+- Free tier: 100,000 requests/day
+- Always on, globally distributed
+- SQLite-like persistence via Durable Objects
+- Good learning project for serverless architecture
+
+---
 - ~$0 cost (Gemini API has free tier)
 
 ---
