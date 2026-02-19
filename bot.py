@@ -25,6 +25,11 @@ from database import init_db, add_transaction, get_monthly_summary
 from categories import categorize_vendor
 from budget import check_budget, get_budget_status
 from export import export_to_excel, export_to_csv
+from ai_categorization import (
+    is_ai_categorization_enabled,
+    toggle_ai_categorization,
+    smart_categorize
+)
 
 # Load environment variables
 load_dotenv()
@@ -55,6 +60,7 @@ Commands:
 /summary - View this month's spending
 /budget - Set budget limits
 /export - Export to Excel
+/ai - Toggle AI categorization
 /help - Show all commands
 
 Built for Singapore: GST 9%, Grab, NTUC, hawker centres 🇸🇬
@@ -72,6 +78,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /summary - Monthly spending summary
 /budget - Set or view budget limits
 /export - Export data to Excel
+/ai - Toggle AI categorization on/off
 
 Just send me a receipt photo anytime! 📸
 
@@ -175,6 +182,46 @@ async def export_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
 
 
+async def ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Toggle AI categorization on/off."""
+    user_id = update.effective_user.id
+    
+    # Check if google-genai is installed
+    try:
+        from ai_categorization import GENAI_AVAILABLE
+        if not GENAI_AVAILABLE:
+            await update.message.reply_text(
+                "❌ AI categorization is not available.\n"
+                "Install with: pip install google-genai"
+            )
+            return
+    except ImportError:
+        await update.message.reply_text(
+            "❌ AI categorization module not found."
+        )
+        return
+    
+    # Toggle the setting
+    current = is_ai_categorization_enabled(user_id)
+    new_state = not current
+    toggle_ai_categorization(user_id, new_state)
+    
+    if new_state:
+        message = (
+            "🤖 AI Categorization: ON\n\n"
+            "Unknown vendors will be categorized using Gemini AI.\n"
+            "This uses a small amount of API quota per unknown vendor."
+        )
+    else:
+        message = (
+            "🤖 AI Categorization: OFF\n\n"
+            "Using rule-based categorization only.\n"
+            "Unknown vendors will be marked as 'others'."
+        )
+    
+    await update.message.reply_text(message)
+
+
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Process receipt photos."""
     user_id = update.effective_user.id
@@ -199,8 +246,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
             return
         
-        # Categorize the vendor
-        category = categorize_vendor(receipt_data['vendor'])
+        # Categorize the vendor (smart categorization with AI fallback)
+        category = smart_categorize(receipt_data['vendor'], user_id, GEMINI_API_KEY)
         
         # Add to database
         transaction_id = add_transaction(
@@ -270,6 +317,7 @@ def main() -> None:
     application.add_handler(CommandHandler("summary", summary_command))
     application.add_handler(CommandHandler("budget", budget_command))
     application.add_handler(CommandHandler("export", export_command))
+    application.add_handler(CommandHandler("ai", ai_command))
     
     # Photo handler
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))

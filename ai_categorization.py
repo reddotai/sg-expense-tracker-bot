@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""
+Smart vendor categorization using Gemini AI.
+Toggle on/off per user preference.
+"""
+
+import os
+import json
+import logging
+from typing import Optional
+
+# Check if google-genai is available
+try:
+    from google import genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    logging.warning("google-genai not installed. AI categorization disabled.")
+
+from database import get_user_setting, set_user_setting
+
+logger = logging.getLogger(__name__)
+
+# Default categories for AI to choose from
+CATEGORY_DESCRIPTIONS = {
+    'groceries': 'Food items, supermarkets, convenience stores',
+    'transport': 'Taxis, ride-hailing, public transport, fuel',
+    'food_delivery': 'Food delivery apps and services',
+    'hawker': 'Hawker centres, food courts, local coffee shops',
+    'dining': 'Restaurants, cafes, fast food',
+    'petrol': 'Gas stations, petrol',
+    'shopping': 'Clothing, retail, online shopping',
+    'electronics': 'Gadgets, computers, appliances',
+    'utilities': 'Phone, internet, electricity, water bills',
+    'healthcare': 'Medical, dental, pharmacy, clinics',
+    'entertainment': 'Movies, streaming, games, gym',
+    'education': 'School, tuition, books, courses',
+    'travel': 'Flights, hotels, travel bookings',
+    'insurance': 'Insurance premiums',
+    'subscriptions': 'Memberships, recurring subscriptions',
+    'others': 'Miscellaneous or unclear'
+}
+
+
+def is_ai_categorization_enabled(user_id: int) -> bool:
+    """Check if user has AI categorization enabled."""
+    setting = get_user_setting(user_id, 'ai_categorization', 'false')
+    return setting.lower() == 'true'
+
+
+def toggle_ai_categorization(user_id: int, enabled: bool) -> bool:
+    """
+    Toggle AI categorization for a user.
+    
+    Args:
+        user_id: Telegram user ID
+        enabled: True to enable, False to disable
+    
+    Returns:
+        True if successful
+    """
+    set_user_setting(user_id, 'ai_categorization', 'true' if enabled else 'false')
+    return True
+
+
+def categorize_with_ai(vendor_name: str, api_key: Optional[str] = None) -> Optional[str]:
+    """
+    Use Gemini AI to categorize an unknown vendor.
+    
+    Args:
+        vendor_name: The vendor name to categorize
+        api_key: Gemini API key (optional, uses env var if not provided)
+    
+    Returns:
+        Category string or None if AI categorization fails
+    """
+    if not GENAI_AVAILABLE:
+        logger.warning("google-genai not installed. Cannot use AI categorization.")
+        return None
+    
+    api_key = api_key or os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        logger.warning("No Gemini API key available for AI categorization")
+        return None
+    
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        # Build category descriptions
+        categories_text = "\n".join([
+            f"- {cat}: {desc}" 
+            for cat, desc in CATEGORY_DESCRIPTIONS.items()
+        ])
+        
+        prompt = f"""Categorize this vendor into ONE of these categories:
+
+{categories_text}
+
+Vendor: "{vendor_name}"
+
+Respond with ONLY the category name (lowercase, no punctuation). If unsure, respond with "others".
+"""
+        
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+        
+        category = response.text.strip().lower()
+        
+        # Validate the category
+        valid_categories = list(CATEGORY_DESCRIPTIONS.keys())
+        if category in valid_categories:
+            logger.info(f"AI categorized '{vendor_name}' as '{category}'")
+            return category
+        else:
+            logger.warning(f"AI returned invalid category '{category}' for '{vendor_name}'")
+            return 'others'
+            
+    except Exception as e:
+        logger.error(f"AI categorization failed: {e}")
+        return None
+
+
+def smart_categorize(vendor_name: str, user_id: int, api_key: Optional[str] = None) -> str:
+    """
+    Smart categorization with fallback to AI if enabled.
+    
+    1. Try rule-based categorization first (fast, free)
+    2. If 'others' and AI is enabled, try Gemini (slower, uses API)
+    3. Return 'others' if AI fails or is disabled
+    
+    Args:
+        vendor_name: Vendor name to categorize
+        user_id: Telegram user ID (for preference check)
+        api_key: Gemini API key (optional)
+    
+    Returns:
+        Category string
+    """
+    from categories import categorize_vendor
+    
+    # Step 1: Rule-based (fast, always runs)
+    category = categorize_vendor(vendor_name)
+    
+    # Step 2: If unknown and AI enabled, try Gemini
+    if category == 'others' and is_ai_categorization_enabled(user_id):
+        ai_category = categorize_with_ai(vendor_name, api_key)
+        if ai_category:
+            return ai_category
+    
+    return category
+
+
+if __name__ == '__main__':
+    # Test AI categorization
+    test_vendors = [
+        'Some Random Shop',
+        'ABC Tuition Centre',
+        'Dr Tan Dental Clinic',
+        'Happy Gym Fitness',
+        'Unknown Bookstore'
+    ]
+    
+    print("Testing AI categorization (requires GEMINI_API_KEY):")
+    for vendor in test_vendors:
+        category = categorize_with_ai(vendor)
+        print(f"  {vendor} → {category or 'AI failed'}")

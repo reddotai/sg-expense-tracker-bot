@@ -167,6 +167,64 @@ def delete_transaction(transaction_id: int, user_id: int) -> bool:
     return deleted
 
 
+# User settings for AI categorization and other preferences
+def init_user_settings_table() -> None:
+    """Create user_settings table if not exists."""
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_settings (
+            user_id INTEGER NOT NULL,
+            setting_key TEXT NOT NULL,
+            setting_value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, setting_key)
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+
+def get_user_setting(user_id: int, key: str, default: str = '') -> str:
+    """Get a user setting value."""
+    init_user_settings_table()  # Ensure table exists
+    
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT setting_value FROM user_settings
+        WHERE user_id = ? AND setting_key = ?
+    ''', (user_id, key))
+    
+    result = cursor.fetchone()
+    conn.close()
+    
+    return result[0] if result else default
+
+
+def set_user_setting(user_id: int, key: str, value: str) -> None:
+    """Set a user setting value."""
+    init_user_settings_table()  # Ensure table exists
+    
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO user_settings (user_id, setting_key, setting_value)
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_id, setting_key) DO UPDATE SET
+            setting_value = excluded.setting_value,
+            updated_at = CURRENT_TIMESTAMP
+    ''', (user_id, key, value))
+    
+    conn.commit()
+    conn.close()
+
+
 if __name__ == '__main__':
     init_db()
+    init_user_settings_table()
     print("Database initialized successfully")
