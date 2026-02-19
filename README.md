@@ -29,9 +29,6 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Note: If you get import errors, also install:
-# pip install google-genai
-
 # 2. Set up your Telegram bot
 # - Message @BotFather on Telegram
 # - Create a new bot

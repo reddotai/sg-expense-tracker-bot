@@ -82,6 +82,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /export - Export data to Excel
 /ai - Toggle AI categorization on/off
 /data - Show where your data is stored
+/delete - Delete a transaction (use: /delete <ID>)
 
 Just send me a receipt photo anytime! 📸
 
@@ -230,6 +231,43 @@ async def data_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text(get_data_location_info())
 
 
+async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Delete a transaction by ID."""
+    user_id = update.effective_user.id
+    
+    # Check if transaction ID was provided
+    if not context.args:
+        await update.message.reply_text(
+            "❌ Please provide a transaction ID.\n"
+            "Use /summary to see your transactions with IDs.\n\n"
+            "Example: /delete 5"
+        )
+        return
+    
+    try:
+        transaction_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text(
+            "❌ Transaction ID must be a number.\n"
+            "Example: /delete 5"
+        )
+        return
+    
+    # Try to delete
+    from database import delete_transaction
+    success = delete_transaction(transaction_id, user_id)
+    
+    if success:
+        await update.message.reply_text(
+            f"✅ Transaction {transaction_id} deleted successfully."
+        )
+    else:
+        await update.message.reply_text(
+            f"❌ Could not delete transaction {transaction_id}.\n"
+            "Make sure the ID is correct and the transaction belongs to you."
+        )
+
+
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Process receipt photos."""
     user_id = update.effective_user.id
@@ -327,6 +365,7 @@ def main() -> None:
     application.add_handler(CommandHandler("export", export_command))
     application.add_handler(CommandHandler("ai", ai_command))
     application.add_handler(CommandHandler("data", data_command))
+    application.add_handler(CommandHandler("delete", delete_command))
     
     # Photo handler
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))

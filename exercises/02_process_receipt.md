@@ -97,6 +97,7 @@ python3 test_receipt.py
 Vendor: NTUC FairPrice
 Amount: $47.85
 Date: 2024-02-19
+GST: $3.95
 ```
 
 ---
@@ -109,9 +110,8 @@ Open `receipt_processor.py` and look at the `process_receipt` function:
 
 ```python
 def process_receipt(photo_bytes: bytearray, api_key: str):
-    # Configure Gemini
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Create Gemini client (new google-genai package)
+    client = genai.Client(api_key=api_key)
     
     # Create prompt
     prompt = """
@@ -120,19 +120,24 @@ def process_receipt(photo_bytes: bytearray, api_key: str):
     2. Total amount
     3. Date of purchase
     4. List of items
+    5. GST amount (if shown)
     
     Return ONLY JSON:
     {
         "vendor": "Store Name",
         "amount": 47.85,
         "date": "2024-02-19",
-        "items": ["item1", "item2"]
+        "items": ["item1", "item2"],
+        "gst_amount": 3.95
     }
     """
     
     # Send to Gemini
     image = Image.open(io.BytesIO(photo_bytes))
-    response = model.generate_content([prompt, image])
+    response = client.models.generate_content(
+        model='gemini-1.5-flash',
+        contents=[prompt, image]
+    )
     
     # Parse JSON response
     # ... (see full code in file)
