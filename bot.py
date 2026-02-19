@@ -30,6 +30,7 @@ from ai_categorization import (
     toggle_ai_categorization,
     smart_categorize
 )
+from config import get_data_location_info
 
 # Load environment variables
 load_dotenv()
@@ -61,6 +62,7 @@ Commands:
 /budget - Set budget limits
 /export - Export to Excel
 /ai - Toggle AI categorization
+/data - Show where your data is stored
 /help - Show all commands
 
 Built for Singapore: GST 9%, Grab, NTUC, hawker centres 🇸🇬
@@ -79,6 +81,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /budget - Set or view budget limits
 /export - Export data to Excel
 /ai - Toggle AI categorization on/off
+/data - Show where your data is stored
 
 Just send me a receipt photo anytime! 📸
 
@@ -222,6 +225,11 @@ async def ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await update.message.reply_text(message)
 
 
+async def data_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show where data is stored."""
+    await update.message.reply_text(get_data_location_info())
+
+
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Process receipt photos."""
     user_id = update.effective_user.id
@@ -318,6 +326,7 @@ def main() -> None:
     application.add_handler(CommandHandler("budget", budget_command))
     application.add_handler(CommandHandler("export", export_command))
     application.add_handler(CommandHandler("ai", ai_command))
+    application.add_handler(CommandHandler("data", data_command))
     
     # Photo handler
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))

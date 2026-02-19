@@ -9,7 +9,9 @@ from datetime import datetime
 from typing import List, Dict, Optional
 from pathlib import Path
 
-DATABASE_FILE = "expenses.db"
+from config import DATABASE_FILE
+
+# DATABASE_FILE is now imported from config
 
 
 def init_db() -> None:

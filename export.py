@@ -10,7 +10,9 @@ Also remove export-related code from bot.py.
 import pandas as pd
 from datetime import datetime
 from typing import Optional
+from pathlib import Path
 from database import get_all_transactions
+from config import EXPORT_DIR
 
 
 def export_to_excel(user_id: int, filename: Optional[str] = None) -> str:
@@ -41,8 +43,11 @@ def export_to_excel(user_id: int, filename: Optional[str] = None) -> str:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"expenses_{timestamp}.xlsx"
     
+    # Full path in export directory
+    filepath = EXPORT_DIR / filename
+    
     # Create Excel writer
-    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+    with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
         # Main transactions sheet
         df.to_excel(writer, sheet_name='Transactions', index=False)
         
@@ -56,7 +61,7 @@ def export_to_excel(user_id: int, filename: Optional[str] = None) -> str:
         monthly = df.groupby('month')['amount'].sum()
         monthly.to_excel(writer, sheet_name='Monthly Summary')
     
-    return filename
+    return str(filepath)
 
 
 def export_to_csv(user_id: int, filename: Optional[str] = None) -> str:
@@ -72,9 +77,11 @@ def export_to_csv(user_id: int, filename: Optional[str] = None) -> str:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"expenses_{timestamp}.csv"
     
-    df.to_csv(filename, index=False)
-    return filename
+    filepath = EXPORT_DIR / filename
+    df.to_csv(filepath, index=False)
+    return str(filepath)
 
 
 if __name__ == '__main__':
     print("Export module loaded")
+    print(f"Exports go to: {EXPORT_DIR}")
